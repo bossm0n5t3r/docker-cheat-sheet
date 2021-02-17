@@ -17,6 +17,7 @@
 * [Volumes](#volumes)
 * [Exposing Ports](#exposing-ports)
 * [Best Practices](#best-practices)
+* [Docker-Compose](#docker-compose)
 * [Security](#security)
 * [Tips](#tips)
 * [Contributing](#contributing)
@@ -31,7 +32,7 @@ Docker helps developers build and ship higher-quality applications, faster." -- 
 
 ## Prerequisites
 
-I use [Oh My Zsh](https://github.com/robbyrussell/oh-my-zsh) with the [Docker plugin](https://github.com/robbyrussell/oh-my-zsh/wiki/Plugins#docker) for autocompletion of docker commands. YMMV.
+I use [Oh My Zsh](https://github.com/ohmyzsh/oh-my-zsh) with the [Docker plugin](https://github.com/robbyrussell/oh-my-zsh/wiki/Plugins#docker) for autocompletion of docker commands. YMMV.
 
 ### Linux
 
@@ -40,6 +41,15 @@ The 3.10.x kernel is [the minimum requirement](https://docs.docker.com/engine/in
 ### MacOS
 
 10.8 “Mountain Lion” or newer is required.
+
+### Windows 10
+
+Hyper-V must be enabled in BIOS
+VT-D must also be enabled if available (Intel Processors)
+
+### Windows Server
+
+Windows Server 2016 is the minimum version required to install docker and docker-compose. Limitations exist on this version, such as multiple virtual networks and linux containers. Windows Server 2019 and later are recommended. 
 
 ## Installation
 
@@ -70,6 +80,48 @@ docker run hello-world
 That's it, you have a running Docker container.
 
 If you are a complete Docker newbie, you should probably follow the [series of tutorials](https://docs.docker.com/engine/getstarted/) now.
+
+### Windows 10
+
+Instructions to install Docker Desktop for Windows can be found [here](https://hub.docker.com/editions/community/docker-ce-desktop-windows)
+
+Once insalled, open powershell as administrator
+
+```powershell
+#Display the version of docker installed:
+docker version
+
+##Pull, create, and run 'hello-world' all in one command:
+docker run hello-world
+
+```
+
+To continue with this cheat sheet, right click the Docker icon in the system tray, and go to settings. In order to mount volumes, the C:/ drive will need to be enabled in the settings to that information can be passed into the containers (later described in this article). 
+
+To switch between Windows containers and Linux containers, right click the icon in the system tray and click the button to switch container operating system Doing this will stop the current containers that are running, and make them unaccessible until the container OS is switched back.
+
+
+Additionally, if you have WSL or WSL2 installed on your desktop, you might want to install the Linux Kernel for Windows. Instructions can be found [here](https://techcommunity.microsoft.com/t5/windows-dev-appconsult/using-wsl2-in-a-docker-linux-container-on-windows-to-run-a/ba-p/1482133). This requires the Windows Subsystem for Linux feature. This will allow for containers to be accessed by WSL operating systems, as well as the efficiency gain from running WSL operating systems in docker. It is also preferred to use [Windows terminal](https://docs.microsoft.com/en-us/windows/terminal/get-started) for this.
+
+### Windows Server 2016 / 2019
+
+Follow Microsoft's instructions that can be found [here](https://docs.microsoft.com/en-us/virtualization/windowscontainers/deploy-containers/deploy-containers-on-server#install-docker)
+
+If using the latest edge version of 2019, be prepared to only work in powershell, as it is only a servercore image (no desktop interface). When starting this machine, it will login and go straight to a powershell window. It is reccomended to install text editors and other tools using [Chocolatey](https://chocolatey.org/install).
+
+After installing, these commands will work:
+```powershell
+#Display the version of docker installed:
+docker version
+
+##Pull, create, and run 'hello-world' all in one command:
+docker run hello-world
+
+```
+
+Windows Server 2016 is not able to run linux images. 
+
+Windows Server Build 2004 is capable of running both linux and windows containers simultaneously through Hyper-V isolation. When running containers, use the ```--isolation=hyperv``` command, which will isolate the container using a seperate kernel instance. 
 
 ### Check Version
 
@@ -231,29 +283,6 @@ Images are just [templates for docker containers](https://docs.docker.com/engine
 * [`docker history`](https://docs.docker.com/engine/reference/commandline/history) shows history of image.
 * [`docker tag`](https://docs.docker.com/engine/reference/commandline/tag) tags an image to a name (local or registry).
 
-## Checking Docker Version 
-
-It is very important that you always know the current version of Docker you are currently running on at any point in time.This is very helpful because you get to know what features are compatible with what you have running. This is also important because you know what containers to run from the docker store when you are trying to get template containers. That said let see how to know what version of docker we have running currently
-
-* ['docker version'](https://docs.docker.com/engine/reference/commandline/version/)   check what version of docker you have running
-
-```bash
-# Get the server version
-docker version --format '{{.Server.Version}}'
-```
-
-In Docker 1.8.0 and higher, you can also dump the raw JSON data:
-
-```bash
-docker version --format '{{json .}}'
-```
-
-will provide the output in JSON format:
-
-```json
-{"Client":{"Version":"1.8.0","ApiVersion":"1.20","GitCommit":"f5bae0a","GoVersion":"go1.4.2","Os":"linux","Arch":"am"}
-```
-
 ### Cleaning up
 
 While you can use the `docker rmi` command to remove specific images, there's a tool called [docker-gc](https://github.com/spotify/docker-gc) that will safely clean up images that are no longer used by any containers. As of docker 1.13, `docker image prune` is also available for removing unused images. See [Prune](#prune).
@@ -289,22 +318,22 @@ Importing a container as an image using the `import` command creates a new image
 
 ## Networks
 
-Docker has a [networks](https://docs.docker.com/engine/userguide/networking/) feature. Not much is known about it, so this is a good place to expand the cheat sheet. There is a note saying that it's a good way to configure docker containers to talk to each other without using ports. See [working with networks](https://docs.docker.com/engine/userguide/networking/work-with-networks/) for more details.
+Docker has a [networks](https://docs.docker.com/engine/userguide/networking/) feature. Docker automatically creates 3 network interfaces when you install it (bridge, host none). A new container is launched into the bridge network by default. To enable communication between multiple containers, you can create a new network and launch containers in it. This enables containers to communicate to each other while being isolated from containers that are not connected to the network. Furthermore, it allows to map container names to their IP addresses. See [working with networks](https://docs.docker.com/engine/userguide/networking/work-with-networks/) for more details.
 
 ### Lifecycle
 
-* [`docker network create`](https://docs.docker.com/engine/reference/commandline/network_create/)
-* [`docker network rm`](https://docs.docker.com/engine/reference/commandline/network_rm/)
+* [`docker network create`](https://docs.docker.com/engine/reference/commandline/network_create/) NAME Create a new network (default type: bridge).
+* [`docker network rm`](https://docs.docker.com/engine/reference/commandline/network_rm/) NAME Remove one or more networks by name or identifier. No containers can be connected to the network when deleting it.
 
 ### Info
 
-* [`docker network ls`](https://docs.docker.com/engine/reference/commandline/network_ls/)
-* [`docker network inspect`](https://docs.docker.com/engine/reference/commandline/network_inspect/)
+* [`docker network ls`](https://docs.docker.com/engine/reference/commandline/network_ls/) List networks
+* [`docker network inspect`](https://docs.docker.com/engine/reference/commandline/network_inspect/) NAME Display detailed information on one or more networks.
 
 ### Connection
 
-* [`docker network connect`](https://docs.docker.com/engine/reference/commandline/network_connect/)
-* [`docker network disconnect`](https://docs.docker.com/engine/reference/commandline/network_disconnect/)
+* [`docker network connect`](https://docs.docker.com/engine/reference/commandline/network_connect/) NETWORK CONTAINER Connect a container to a network
+* [`docker network disconnect`](https://docs.docker.com/engine/reference/commandline/network_disconnect/) NETWORK CONTAINER Disconnect a container from a network
 
 You can specify a [specific IP address for a container](https://blog.jessfraz.com/post/ips-for-all-the-things/):
 
@@ -372,10 +401,12 @@ Here are some common text editors and their syntax highlighting modules you coul
 * [ONBUILD](https://docs.docker.com/engine/reference/builder/#onbuild) adds a trigger instruction when the image is used as the base for another build.
 * [STOPSIGNAL](https://docs.docker.com/engine/reference/builder/#stopsignal) sets the system call signal that will be sent to the container to exit.
 * [LABEL](https://docs.docker.com/config/labels-custom-metadata/) apply key/value metadata to your images, containers, or daemons.
+* [SHELL](https://docs.docker.com/engine/reference/builder/#shell) override default shell is used by docker to run commands.
+* [HEALTHCHECK](https://docs.docker.com/engine/reference/builder/#healthcheck) tells docker how to test a container to check that it is still working.
 
 ### Tutorial
 
-* [Flux7's Dockerfile Tutorial](http://flux7.com/blogs/docker/docker-tutorial-series-part-3-automation-is-the-word-using-dockerfile/)
+* [Flux7's Dockerfile Tutorial](https://www.flux7.com/tutorial/docker-tutorial-series-part-3-automation-is-the-word-using-dockerfile/)
 
 ### Examples
 
@@ -509,11 +540,29 @@ This is where general Docker best practices and war stories go:
 * [Building a Development Environment With Docker](https://tersesystems.com/2013/11/20/building-a-development-environment-with-docker/)
 * [Discourse in a Docker Container](https://samsaffron.com/archive/2013/11/07/discourse-in-a-docker-container)
 
+## Docker-Compose
+
+Compose is a tool for defining and running multi-container Docker applications. With Compose, you use a YAML file to configure your application’s services. Then, with a single command, you create and start all the services from your configuration. To learn more about all the features of Compose, see the [list of features](https://docs.docker.com/compose/overview/#features).
+
+By using the following command you can start up your application:
+
+```
+docker-compose -f <docker-compose-file> up
+```
+
+You can also run docker-compose in detached mode using -d flag, then you can stop it whenever needed by the following command:
+
+```
+docker-compose stop
+```
+
+You can bring everything down, removing the containers entirely, with the down command. Pass `--volumes` to also remove the data volume.
+
 ## Security
 
 This is where security tips about Docker go. The Docker [security](https://docs.docker.com/engine/security/security/) page goes into more detail.
 
-First things first: Docker runs as root. If you are in the `docker` group, you effectively [have root access](https://web.archive.org/web/20161226211755/http://reventlov.com/advisories/using-the-docker-command-to-root-the-host). If you expose the docker unix socket to a container, you are giving the container [root access to the host](https://www.lvh.io/posts/dont-expose-the-docker-socket-not-even-to-a-container.html).  
+First things first: Docker runs as root. If you are in the `docker` group, you effectively [have root access](https://web.archive.org/web/20161226211755/http://reventlov.com/advisories/using-the-docker-command-to-root-the-host). If you expose the docker unix socket to a container, you are giving the container [root access to the host](https://www.lvh.io/posts/dont-expose-the-docker-socket-not-even-to-a-container/).
 
 Docker should not be your only defense. You should secure and harden it.
 
